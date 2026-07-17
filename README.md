@@ -23,7 +23,7 @@ A real-time location tracking application disguised as a premium weather app. Fe
 
 ### 1. Clone and Navigate
 ```bash
-git clone <repository-url>
+git clone https://github.com/abdul12621262-ui/Tracker
 cd live-location-tracker
 ```
 
