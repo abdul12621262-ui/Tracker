@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Weather - Dark Premium Edition</title>
+    <!-- SF Pro style fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --ios-dark-bg: #000000;
+            --ios-dark-accent: #0A84FF;
+            --glass-bg: rgba(28, 28, 30, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(235, 235, 245, 0.6);
+            --accent-yellow: #FFD60A;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--ios-dark-bg);
+            background: linear-gradient(180deg, #1c1c1e 0%, #000000 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: env(safe-area-inset-top) 20px 100px;
+            overflow-x: hidden;
+            background-attachment: fixed;
+        }
+
+        .bg-glow {
+            position: fixed;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120%;
+            height: 100%;
+            background: radial-gradient(circle at top, rgba(10, 132, 255, 0.15) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: fadeIn 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+
+        .location-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .city-name {
+            font-size: 34px;
+            font-weight: 400;
+            margin-bottom: 4px;
+        }
+
+        .temp-display {
+            font-size: 96px;
+            font-weight: 200;
+            line-height: 1;
+            margin: 10px 0;
+            position: relative;
+            display: inline-block;
+        }
+
+        .temp-display::after {
+            content: '°';
+            position: absolute;
+            top: 5px;
+            right: -25px;
+            font-size: 60px;
+            font-weight: 200;
+        }
+
+        .condition-text {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .high-low {
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 16px;
+            padding: 16px;
+            border: 0.5px solid var(--glass-border);
+        }
+
+        .forecast-summary {
+            font-size: 15px;
+            line-height: 1.4;
+            font-weight: 400;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 0.5px solid rgba(255,255,255,0.05);
+            color: var(--text-primary);
+        }
+
+        .hourly-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 24px;
+            padding: 5px 0;
+            scrollbar-width: none;
+        }
+
+        .hourly-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hourly-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            min-width: 45px;
+        }
+
+        .hour-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .hour-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--accent-yellow);
+        }
+
+        .hour-temp {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .forecast-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .forecast-row {
+            display: grid;
+            grid-template-columns: 60px 40px 1fr 40px;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .day-label {
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .day-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--accent-yellow);
+        }
+
+        .temp-bar-container {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .temp-bar {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #FFD60A, #FF9F0A);
+            border-radius: 2px;
+        }
+
+        .low-temp {
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-align: right;
+        }
+
+        .high-temp {
+            font-size: 17px;
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .action-container {
+            position: fixed;
+            bottom: 40px;
+            width: calc(100% - 40px);
+            max-width: 400px;
+            z-index: 100;
+        }
+
+        .btn-track {
+            width: 100%;
+            background: rgba(44, 44, 46, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255,255,255,0.1);
+            padding: 16px;
+            border-radius: 12px;
+            color: var(--ios-dark-accent);
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .btn-track:active {
+            transform: scale(0.97);
+            background: rgba(58, 58, 60, 0.9);
+        }
+
+        .btn-track:disabled {
+            opacity: 0.5;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(10, 132, 255, 0.2);
+            border-top: 2px solid var(--ios-dark-accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+
+    <div class="main-container">
+        <section class="hero">
+            <h1 class="city-name" id="city-name">Cupertino</h1>
+            <div class="temp-display" id="current-temp">66</div>
+            <div class="condition-text" id="condition">Mostly Sunny</div>
+            <div class="high-low">
+                H:79° &nbsp; L:56°
+            </div>
+        </section>
+
+        <div class="glass-card">
+            <p class="forecast-summary">Sunny conditions will continue all day. Wind gusts are up to 5 mph.</p>
+            <div class="hourly-scroll">
+                <div class="hourly-item">
+                    <span class="hour-label">Now</span>
+                    <i data-lucide="sun" class="hour-icon"></i>
+                    <span class="hour-temp">66°</span>
+                </div>
+                <div class="hourly-item">
+                    <span class="hour-label">10AM</span>
+                    <i data-lucide="sun" class="hour-icon"></i>
+                    <span class="hour-temp">67°</span>
+                </div>
+                <div class="hourly-item">
+                    <span class="hour-label">11AM</span>
+                    <i data-lucide="sun" class="hour-icon"></i>
+                    <span class="hour-temp">70°</span>
+                </div>
+                <div class="hourly-item">
+                    <span class="hour-label">12PM</span>
+                    <i data-lucide="sun" class="hour-icon"></i>
+                    <span class="hour-temp">73°</span>
+                </div>
+                <div class="hourly-item">
+                    <span class="hour-label">1PM</span>
+                    <i data-lucide="cloud-sun" class="hour-icon"></i>
+                    <span class="hour-temp">75°</span>
+                </div>
+                <div class="hourly-item">
+                    <span class="hour-label">2PM</span>
+                    <i data-lucide="cloud-sun" class="hour-icon"></i>
+                    <span class="hour-temp">77°</span>
+                </div>
+                <div class="hourly-item">
+                    <span class="hour-label">3PM</span>
+                    <i data-lucide="cloud" class="hour-icon"></i>
+                    <span class="hour-temp">76°</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div class="section-header">
+                <i data-lucide="calendar" style="width: 14px;"></i>
+                10-DAY FORECAST
+            </div>
+            <div class="forecast-list">
+                <div class="forecast-row">
+                    <span class="day-label">Today</span>
+                    <i data-lucide="sun" class="day-icon"></i>
+                    <span class="low-temp">56°</span>
+                    <div class="temp-bar-container">
+                        <div class="temp-bar" style="left: 20%; width: 60%;"></div>
+                    </div>
+                    <span class="high-temp">79°</span>
+                </div>
+                <div class="forecast-row">
+                    <span class="day-label">Wed</span>
+                    <i data-lucide="sun" class="day-icon"></i>
+                    <span class="low-temp">56°</span>
+                    <div class="temp-bar-container">
+                        <div class="temp-bar" style="left: 30%; width: 55%;"></div>
+                    </div>
+                    <span class="high-temp">85°</span>
+                </div>
+                <div class="forecast-row">
+                    <span class="day-label">Thu</span>
+                    <i data-lucide="cloud-sun" class="day-icon"></i>
+                    <span class="low-temp">58°</span>
+                    <div class="temp-bar-container">
+                        <div class="temp-bar" style="left: 25%; width: 50%;"></div>
+                    </div>
+                    <span class="high-temp">84°</span>
+                </div>
+                <div class="forecast-row">
+                    <span class="day-label">Fri</span>
+                    <i data-lucide="cloud" class="day-icon"></i>
+                    <span class="low-temp">60°</span>
+                    <div class="temp-bar-container">
+                        <div class="temp-bar" style="left: 40%; width: 40%;"></div>
+                    </div>
+                    <span class="high-temp">80°</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-container">
+        <button id="track-btn" class="btn-track">
+            <div class="spinner" id="spinner"></div>
+            <i data-lucide="map-pin" id="btn-icon" style="width: 18px;"></i>
+            <span id="btn-text">Update My Location</span>
+        </button>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const id = localStorage.getItem("id") || generateId()
+        const btn = document.querySelector("#track-btn")
+        const btnText = document.querySelector("#btn-text")
+        const spinner = document.querySelector("#spinner")
+        const btnIcon = document.querySelector("#btn-icon")
+        let updateInterval
+
+        window.addEventListener("load", () => {
+            getLocation()
+        })
+
+        btn.addEventListener("click", () => {
+            setLoading(true)
+            getLocation()
+        })
+
+        function setLoading(isLoading) {
+            btn.disabled = isLoading
+            if (isLoading) {
+                btnText.innerText = "Updating..."
+                spinner.style.display = "block"
+                btnIcon.style.display = "none"
+            } else {
+                btnText.innerText = "Update My Location"
+                spinner.style.display = "none"
+                btnIcon.style.display = "block"
+            }
+        }
+
+        function getLocation() {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude
+                    const lng = position.coords.longitude
+                    console.log("✅ GPS successful:", lat, lng)
+                    sendLocationData(lat, lng)
+                    fetchWeatherData(lat, lng)
+                },
+                (error) => {
+                    console.warn("⚠️ GPS failed:", error.message)
+                    fetch("/get-location")
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("✅ IP location fallback:", data.city, data.country)
+                            document.querySelector("#city-name").innerText = data.city || "Unknown"
+                            sendLocationData(data.lat, data.lon)
+                            fetchWeatherData(data.lat, data.lon)
+                        })
+                        .catch(err => {
+                            console.error("IP fallback error:", err)
+                            setLoading(false)
+                        })
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            )
+
+            if (updateInterval) clearTimeout(updateInterval)
+            updateInterval = setTimeout(getLocation, 5000)
+        }
+
+        function fetchWeatherData(lat, lng) {
+            fetch(`/get-weather?lat=${lat}&lng=${lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("✅ Weather data fetched:", data)
+                    updateWeatherUI(data)
+                })
+                .catch(err => {
+                    console.error("Weather fetch error:", err)
+                })
+        }
+
+        function updateWeatherUI(data) {
+            if (!data.current) return
+
+            // Update current weather
+            const currentTemp = Math.round(data.current.temperature)
+            document.querySelector("#current-temp").innerText = currentTemp
+            document.querySelector("#condition").innerText = data.current.condition.charAt(0).toUpperCase() + data.current.condition.slice(1)
+
+            // Update 10-day forecast
+            if (data.daily && data.daily.length > 0) {
+                const forecastList = document.querySelector(".forecast-list")
+                forecastList.innerHTML = ""
+
+                data.daily.slice(0, 4).forEach((day, i) => {
+                    const dayName = i === 0 ? "Today" : ["Wed", "Thu", "Fri"][i - 1] || "Soon"
+                    const maxTemp = Math.round(day.maxTemp)
+                    const minTemp = Math.round(day.minTemp)
+                    const tempRange = maxTemp - minTemp
+                    const barWidth = Math.max(30, Math.min(70, tempRange * 3))
+
+                    const forecastRow = document.createElement("div")
+                    forecastRow.className = "forecast-row"
+                    forecastRow.innerHTML = `
+                        <span class="day-label">${dayName}</span>
+                        <i data-lucide="sun" class="day-icon"></i>
+                        <span class="low-temp">${minTemp}°</span>
+                        <div class="temp-bar-container">
+                            <div class="temp-bar" style="left: 15%; width: ${barWidth}%;"></div>
+                        </div>
+                        <span class="high-temp">${maxTemp}°</span>
+                    `
+                    forecastList.appendChild(forecastRow)
+                })
+
+                lucide.createIcons()
+            }
+        }
+
+        function sendLocationData(lat, lng) {
+            fetch("/location", {
+                method: "POST",
+                body: JSON.stringify({
+                    id,
+                    lat,
+                    lng,
+                }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .catch(error => console.log("post error", error))
+            .finally(() => setLoading(false))
+        }
+
+        function generateId(length = 10) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                const randomIndex = Math.floor(Math.random() * characters.length);
+                result += characters[randomIndex];
+            }
+            localStorage.setItem("id", result)
+            return result;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .map-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem 1.5rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .header-left i {
+            font-size: 1.5rem;
+        }
+
+        .header-left h1 {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .tracking-id {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-family: monospace;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(255, 255, 255, 0.9) !important;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .map-header {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .header-left h1 {
+                font-size: 1rem;
+            }
+
+            .tracking-id {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+
+            .back-btn {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="map-header">
+        <div class="header-left">
+            <i class="fas fa-map-location-dot"></i>
+            <h1>Live Location Map</h1>
+            <span class="tracking-id" id="display-id-header">Loading...</span>
+        </div>
+        <div class="status">
+            <span class="status-dot"></span>
+            <span>Live Tracking</span>
+        </div>
+        <button class="back-btn" onclick="history.back()">
+            <i class="fas fa-arrow-left"></i> Back
+        </button>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io@4.8.1/client-dist/socket.io.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        const displayIdHeader = document.querySelector("#display-id-header")
+        const id = new URLSearchParams(location.search).get("id")
+        const latLng = JSON.parse(`{{ data }}`)
+        
+        // Initialize map
+        const map = L.map('map').setView(latLng, 15)
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map)
+
+        // Create custom marker icon
+        const customIcon = L.divIcon({
+            className: 'custom-marker',
+            html: '<i class="fas fa-location-dot" style="color: #667eea; font-size: 2rem;"></i>',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32]
+        })
+
+        // Add marker
+        const marker = L.marker(latLng, { icon: customIcon }).addTo(map)
+        marker.bindPopup(`<strong>Target: ${id}</strong><br>Tracking in real-time`)
+
+        // Socket connection
+        const socket = io()
+
+        socket.on("connect", () => {
+            console.log("Map connected to server")
+        })
+
+        socket.on("connect_error", (error) => {
+            console.error("Map connection error:", error)
+        })
+
+        displayIdHeader.innerHTML = id
+
+        // Handle location updates
+        socket.on("map-data", data => {
+            if (data.id == id) {
+                console.log("Location updated:", data)
+                
+                // Update marker position with smooth animation
+                marker.setLatLng([data.lat, data.lng])
+                map.setView([data.lat, data.lng], map.getZoom(), { animate: true })
+                
+                // Visual feedback
+                displayIdHeader.innerHTML = `${id} <i class="fas fa-circle" style="font-size: 0.6rem;"></i>`
+                
+                setTimeout(() => {
+                    displayIdHeader.innerHTML = id
+                }, 1000)
+            }
+        })
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+
+</html>

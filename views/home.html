@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Location Tracker - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/1.0.2/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .header-section {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            border-bottom: 3px solid #667eea;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-section h1 {
+            color: white;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 0.5rem;
+        }
+
+        .header-section p {
+            color: #e0e0e0;
+            font-size: 0.9rem;
+        }
+
+        .container-wrapper {
+            max-width: 1000px;
+            margin: 2rem auto;
+        }
+
+        .targets-section {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .targets-section h2 {
+            color: #667eea;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .targets-section h2 i {
+            margin-right: 0.8rem;
+            font-size: 1.3em;
+        }
+
+        .target-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.8rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-decoration: none;
+            display: block;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .target-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+            color: white;
+        }
+
+        .no-targets {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+
+        .no-targets i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ddd;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-section has-text-centered">
+        <h1 class="title is-3">
+            <i class="fas fa-map-location-dot"></i> Live Location Tracker
+        </h1>
+        <p class="subtitle is-6">Admin Dashboard - Monitor Active Targets</p>
+    </div>
+
+    <div class="container-wrapper">
+        <div class="targets-section">
+            <h2>
+                <i class="fas fa-crosshairs"></i>
+                Active Targets
+            </h2>
+
+            <div id="tar-content">
+                {{ for(value, key in TARGETS) }}
+                <a href="/map?id={{ key }}" class="target-button">
+                    <i class="fas fa-location-dot"></i> {{ key }}
+                    <span class="status-badge">Active</span>
+                </a>
+                {{/}}
+            </div>
+
+            <div id="no-targets-message" class="no-targets" style="display: none;">
+                <i class="fas fa-inbox"></i>
+                <p>No active targets yet</p>
+                <p style="color: #ccc; font-size: 0.9rem;">Targets will appear here when they connect</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/socket.io@4.8.1/client-dist/socket.io.min.js"></script>
+    <script>
+        const content = document.querySelector("#tar-content")
+        const noTargetsMsg = document.querySelector("#no-targets-message")
+        const socket = io()
+
+        function checkEmptyState() {
+            const hasTargets = content.children.length > 0
+            noTargetsMsg.style.display = hasTargets ? 'none' : 'block'
+        }
+
+        socket.on("connect", () => {
+            console.log("Connected to server")
+        })
+
+        socket.on("connect_error", (error) => {
+            console.error("Connection error:", error)
+        })
+
+        socket.on("user-connected", newId => {
+            console.log("New user connected:", newId)
+            const a = document.createElement('a')
+            a.href = `/map?id=${newId}`
+            a.className = "target-button"
+            a.innerHTML = `<i class="fas fa-location-dot"></i> ${newId} <span class="status-badge">Active</span>`
+            content.appendChild(a)
+            checkEmptyState()
+        })
+
+        checkEmptyState()
+    </script>
+</body>
+
+</html>
